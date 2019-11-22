@@ -1,0 +1,327 @@
+---
+title: "Create plots and figures for the project"
+description: |
+  Impact of different factors on Vaccination Rate
+author:
+  - name: Ashish Damania 
+    affiliation: Baylor College of Medicine
+date: "`r Sys.Date()`"
+output:
+   radix::radix_article:
+     toc: true
+     self_contained: true
+---
+
+```{r}
+library(tidyverse)
+library(rmarkdown)
+library(broom)
+library(tableHTML)
+library(geofacet)
+library(gghighlight)
+library(sf)
+```
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+# Data for model
+```{r}
+complete_data <- readRDS("processed_intermediate_data.rds") 
+paged_table(complete_data)
+```
+
+
+
+
+
+# Rate of vaccination across the years 1995-2017
+```{r}
+ggplot(complete_data) +
+  geom_line(aes(YEAR, rate,color = STATE_FULL_NAME)) +
+   geom_hline(yintercept=93,linetype="dashed") +
+  facet_geo(~ STATE_FULL_NAME, grid = "us_state_grid2") +
+  theme_bw()+
+  
+  scale_x_continuous(labels = function(x) paste0("'", substr(x, 3, 4))) +
+  ylab("Vaccination Rate (%)")+
+  theme(legend.position = "none") +
+  ggtitle("Vaccination rate across 50 US states 1995-2017")
+
+ggsave("rate_of_vaccination_states_1995_2017.pdf", width = 30, height = 20, units = "cm")
+```
+
+
+```{r}
+ggplot(complete_data) +
+  geom_line(aes(YEAR, rate,color = STATE_FULL_NAME)) +
+  gghighlight(max(rate) > 95,use_direct_label = FALSE)+
+  facet_geo(~ STATE_FULL_NAME, grid = "us_state_grid2") +
+  theme_bw()+
+  
+  scale_x_continuous(labels = function(x) paste0("'", substr(x, 3, 4))) +
+  ylab("Vaccination Rate (%)")+
+  theme(legend.position = "none") +
+  ggtitle("States which have achieved 95% vaccination rate atleast once since 1995")
+
+ggsave("rate_of_vaccination_states.pdf", width = 30, height = 20, units = "cm")
+```
+
+
+
+
+# Rate of vaccination across the years 2010-2017
+```{r}
+complete_data %>%
+  filter(YEAR > 2009) %>%
+ggplot(.) +
+  geom_line(aes(YEAR, rate,color = STATE_FULL_NAME)) +
+  gghighlight(max(rate) > 95,use_direct_label = FALSE)+
+  facet_geo(~ STATE_FULL_NAME, grid = "us_state_grid2") +
+  theme_bw()+
+  
+  scale_x_continuous(labels = function(x) paste0("'", substr(x, 3, 4))) +
+  ylab("Vaccination Rate (%)")+
+  theme(legend.position = "none") +
+  ggtitle("States which have achieved 95% vaccination rate atleast once since 2010")
+
+ggsave("rate_of_vaccination_states_2010_2017.pdf", width = 30, height = 20, units = "cm")
+```
+
+
+# Rate of adverse reaction rate across the years 1995-2017
+```{r}
+complete_data %>%
+ggplot(.) +
+  geom_line(aes(YEAR, reaction_rate_per_100_000)) +
+  #gghighlight(max(rate) > 95,use_direct_label = FALSE)+
+  facet_geo(~ STATE_FULL_NAME, grid = "us_state_grid2") +
+  theme_bw()+
+  
+  scale_x_continuous(labels = function(x) paste0("'", substr(x, 3, 4))) +
+  ylab("Reaction rate per 100,000")+
+  theme(legend.position = "none") +
+  ggtitle("Reaction rate per 100,000")
+
+ggsave("rate_of_adverse_reaction_states_1995_2017.pdf", width = 30, height = 20, units = "cm")
+```
+
+
+
+
+# Rate of hospitalization rate across the years 1995-2017
+```{r}
+complete_data %>%
+ggplot(.) +
+  geom_line(aes(YEAR, hospitalization_rate_per_100_000)) +
+  #gghighlight(max(rate) > 95,use_direct_label = FALSE)+
+  facet_geo(~ STATE_FULL_NAME, grid = "us_state_grid2") +
+  theme_bw()+
+  
+  scale_x_continuous(labels = function(x) paste0("'", substr(x, 3, 4))) +
+  ylab("Hospitalization rate per 100,000")+
+  theme(legend.position = "none") +
+  ggtitle("Hospitalization rate per 100,000")
+
+ggsave("rate_of_hospitalization_rate_states_1995_2017.pdf", width = 30, height = 20, units = "cm")
+```
+
+
+
+
+
+## States that allow personal exemption
+```{r}
+df1_plotmeans <- complete_data %>%
+  select(STATE_FULL_NAME,rate,YEAR,exemption_y_n) %>%
+  filter (YEAR > 1994) %>%
+  group_by(STATE_FULL_NAME,exemption_y_n) %>%
+do(data.frame(rbind(Hmisc::smean.cl.boot(.$rate)))) %>%
+  ungroup() %>%
+  filter(exemption_y_n == 1)
+
+
+  ggplot(data=df1_plotmeans, aes(x=reorder(STATE_FULL_NAME,-Mean),y=Mean)) +
+  geom_pointrange(aes(ymin = Lower, ymax = Upper,color=exemption_y_n),size=1) + 
+    scale_color_manual(name="",labels=c("","") ,
+    values=c("red","blue") )+
+      xlab("States") +
+    ylab("Mean vaccination coverage 1995-2017") +
+  coord_flip()+
+  theme_bw()+
+    theme(text = element_text(size=18))+
+    theme(legend.position = "none")+
+  annotate("rect", ymin = 93, ymax = Inf, xmin=Inf,xmax = -Inf,alpha = .2,fill="green")
+   ggsave("Mean_vaccination_coverage_1995_2017_yes_exemption.pdf", width = 30, height = 20, units = "cm")
+```  
+  
+  
+## States that do no allow personal exemption  
+```{r}  
+df3_plotmeans <- complete_data %>%
+  select(STATE_FULL_NAME,rate,YEAR,exemption_y_n) %>%
+  filter (YEAR > 1994) %>%
+  group_by(STATE_FULL_NAME,exemption_y_n) %>%
+do(data.frame(rbind(Hmisc::smean.cl.boot(.$rate)))) %>%
+  ungroup() %>%
+  filter(exemption_y_n == 0) %>%
+  filter(!is.na(Lower))
+
+
+  ggplot(data=df3_plotmeans, aes(x=reorder(STATE_FULL_NAME,-Mean),y=Mean)) +
+  geom_pointrange(aes(ymin = Lower, ymax = Upper,color=exemption_y_n),size=1) + 
+  scale_color_manual(name="",labels=c("Does not allow Philosophical exemption") ,
+  values=c("blue") )+
+  xlab("States") +
+  ylab("Mean vaccination coverage 1995-2017") +
+  guides(fill = guide_legend(title = "LEFT", title.position = "left")) +
+  coord_flip()+
+  theme_bw()+
+  theme(text = element_text(size=18))+
+     theme(legend.position = "none")+
+  annotate("rect", ymin = 93, ymax = Inf, xmin=Inf,xmax = -Inf,alpha = .2,fill="green")
+    ggsave("Mean_vaccination_coverage_1995_2017_no_exemption.pdf", width = 30, height = 30, units = "cm")
+```
+
+
+```{r}
+df2_plotmeans <- complete_data %>%
+  select(STATE_FULL_NAME,rate,YEAR,exemption_y_n) %>%
+  filter (YEAR > 1994) %>%
+  mutate(exemption_y_n= case_when(
+    exemption_y_n =="0" ~ "Does not allow philisophical exemption",
+    exemption_y_n =="1" ~ "Allows philisophical exemption"
+  )) %>%
+  group_by(STATE_FULL_NAME,exemption_y_n) %>%
+do(data.frame(rbind(Hmisc::smean.cl.boot(.$rate)))) %>%
+  ungroup()%>%
+  arrange(-Mean) %>%
+  mutate(r=row_number())
+ # filter(exemption_y_n == 0)
+
+
+  ggplot(data=df2_plotmeans, aes(x=reorder(STATE_FULL_NAME,-Mean),y=Mean)) +
+  geom_pointrange(aes(ymin = Lower, ymax = Upper,color=exemption_y_n)) +
+   scale_color_manual(name="State",labels=c("Allows Philosophical Exemption","Does not allow Philosophical exemption") ,
+    values=c("red","blue") )+
+    xlab("States") +
+    ylab("Mean vaccination coverage 1995-2017") +
+      guides(fill = guide_legend(title = "LEFT", title.position = "left")) +
+  coord_flip()+
+  theme_bw()+
+annotate("rect", ymin = 90, ymax = 100, xmin=Inf,xmax = -Inf,alpha = .2,fill="green")
+  ggsave("Mean_vaccination_coverage_1995_2017.pdf", width = 30, height = 20, units = "cm")
+```
+
+
+
+
+```{r}
+
+states<-  sf::st_read("cb_2017_us_state_20m/cb_2017_us_state_20m.shp") %>%
+                filter(NAME != "District of Columbia") %>%
+                filter(NAME != "Puerto Rico") %>%
+filter(as.numeric(as.character(STATEFP)) < 57) %>%
+         #this removes US territories
+          filter(as.numeric(as.character(STATEFP)) != 2) %>% 
+        #this removes Alaska
+          filter(as.numeric(as.character(STATEFP)) != 15) %>%
+        #this removes Hawaii 
+        mutate(abb_state= openintro::state2abbr(NAME))
+
+nc3_points <- sf::st_point_on_surface(states)
+nc3_coords <- as.data.frame(sf::st_coordinates(nc3_points))
+nc3_coords$NAME <- states$abb_state
+
+com_df <- complete_data %>%
+  mutate(herd_immunity=case_when(
+    rate >= 93 ~ 1,
+    rate < 93 ~ 0
+  )) %>%
+  group_by(STATE_FULL_NAME,herd_immunity) %>%
+  tally() %>%
+  spread(herd_immunity,n) %>%
+  mutate(.,`1`=ifelse(is.na(`1`), 0, `1`)) %>%
+  mutate(percent_achieved_herd_immunity = `1`/23) %>%
+    filter(STATE_FULL_NAME!="Alaska") %>%
+  filter(STATE_FULL_NAME!="Hawaii") 
+
+ggplot() +
+  geom_sf(data=states, aes(fill=com_df$`1`))+
+  #coord_sf(xlim = c(, 25), ylim = c(-180, -150), expand = FALSE, datum = NA)+
+  scale_fill_viridis_c(option = "plasma", "Count of years",direction=-1) +
+  geom_label(data = nc3_coords, aes(X, Y, label = NAME), size = 4, fontface = "bold", 
+        nudge_y = nc3_coords$nudge_y, nudge_x = nc3_coords$nudge_x) +
+  theme_bw()+
+    theme(legend.position="bottom")+
+   theme(axis.text.x=element_blank(), 
+        axis.text.y=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.ticks.y=element_blank(),
+        panel.grid = element_blank(),
+        legend.position = c(0.9, 0.3)
+      ) +
+  xlab("") +
+  ylab("")
+  
+    ggsave("Heatmap_count_years_exceeding_93_percent.pdf", width = 30, height = 20, units = "cm")
+```
+
+
+
+
+
+
+
+
+# Current coverage
+```{r}
+com_df_2017 <- complete_data %>%
+  filter(YEAR==2017) %>%
+  select(STATE_FULL_NAME,rate) %>%
+  filter(STATE_FULL_NAME!="Alaska") %>%
+  filter(STATE_FULL_NAME!="Hawaii") %>%
+  mutate(category = case_when(
+    rate >= 93 ~ "At herd immunity",
+    rate > 90  & rate  < 93 ~ "Above 90% and below 93%",
+    rate <=90 & rate > 85 ~ "Below 90%"
+  ))
+
+all_df <- states %>%
+  inner_join(com_df_2017, by = c("NAME"="STATE_FULL_NAME"))
+
+ggplot() +
+  geom_sf(data=all_df, aes(fill=factor(category)))+
+ scale_fill_manual(values=c( "#F3DFA2","#7EBDC2","#BB4430"), 
+                       breaks=c( "At herd immunity","Above 90% and below 93%","Below 90%"),
+                       labels=c("At herd immunity","Above 90% and below 93%","Below 90%")) +
+  geom_label(data = nc3_coords, aes(X, Y, label = NAME), size = 2.5, fontface = "bold", 
+        nudge_y = nc3_coords$nudge_y, nudge_x = nc3_coords$nudge_x) +
+  theme_bw()+
+    guides(fill=guide_legend(title="Vaccination coverage (2017")) +
+    theme(legend.position="top")+
+   theme(axis.text.x=element_blank(), 
+        axis.text.y=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.ticks.y=element_blank()) +
+  xlab("") +
+  ylab("")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

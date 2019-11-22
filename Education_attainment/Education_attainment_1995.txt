@@ -1,0 +1,56 @@
+"77
+Table 13.    Educational Attainment of Persons 25 Years Old and Over, for States: March 1995
+[Numbers in thousands. Noninstitutional population]"					
+State	Total population	High school graduate or more		Completed Bachelor’s degree or more	
+		Percent	1.6*  (s.e.)1	Percent	1.6*  (s.e.)1
+Alabama                                                              	2  701	74.4	2.4	17.3	2
+Alaska                                                                  	360	92.1	1.3	25.2	2.2
+Arizona                                                                	2  584	82.3	2	19.1	2.1
+Arkansas                                                             	1  582	76.2	2.3	14.2	1.9
+California                                                             	19  887	79.6	0.8	24.2	0.9
+Colorado                                                              	2  362	91.3	1.6	33.3	2.6
+Connecticut                                                          	2  104	85.6	2.2	32.7	2.9
+Delaware                                                             	452	81.4	2.3	22.9	2.5
+Dist. of Columbia                                                	403	78.9	2.5	38.2	3
+Florida                                                                  	9  497	82.8	1	22.1	1.1
+Georgia                                                                	4  583	78.2	2.1	22.7	2.2
+Hawaii                                                                  	766	84.1	2	22.6	2.3
+Idaho                                                                    	700	86.4	1.7	22.1	2.1
+Illinois                                                                   	7  423	82.3	1.1	24.6	1.3
+Indiana                                                                 	3  589	81.6	2.2	16.9	2.1
+Iowa                                                                      	1  788	84.7	1.9	19.7	2.1
+Kansas                                                                 	1  531	86.5	1.9	25.8	2.4
+Kentucky                                                             	2  447	76.7	2.3	19.3	2.2
+Louisiana                                                             	2  614	75.8	2.5	20.1	2.3
+Maine                                                                   	815	86.2	1.9	21.5	2.3
+Maryland                                                              	3  368	82	2.1	26.4	2.5
+Massachusetts                                                    	3  961	85.8	1	32.6	1.4
+Michigan                                                              	6  000	83.7	1.1	20.7	1.2
+Minnesota                                                           	2  867	88.4	1.8	26.5	2.5
+Mississippi                                                            	1  607	76.4	2.3	17.6	2
+Missouri                                                               	3  367	82.2	2.2	21.9	2.3
+Montana                                                              	546	84.7	1.9	22.1	2.2
+Nebraska                                                             	981	89.1	1.7	24.1	2.3
+Nevada                                                                	1  014	85.3	1.7	17.4	1.9
+New Hampshire                                                  	757	86.8	2.1	25.8	2.7
+New Jersey                                                          	5  168	85.4	1	27.9	1.3
+New Mexico                                                         	1  030	80	2.1	21.4	2.1
+New York                                                            	11  818	82.5	0.8	26.3	0.9
+North Carolina                                                     	4  604	76.3	1.1	20.6	1.1
+North Dakota                                                       	387	81.6	2.1	19.8	2.1
+Ohio                                                                      	6  980	83.4	1.1	19.7	1.1
+Oklahoma                                                            	2  077	82.6	2	19.1	2.1
+Oregon                                                                 	2  035	85.1	2	23	2.4
+Pennsylvania                                                       	7  916	81.4	1.1	20.5	1.1
+Rhode Island                                                       	654	78.9	2.5	27.9	2.7
+South Carolina                                                    	2  300	74.3	2.1	18.2	1.9
+South Dakota                                                      	439	83.7	1.8	18.9	2
+Tennessee                                                           	3  337	77.4	2.1	17.8	2
+Texas                                                                   	11  262	76.2	1.2	22	1.1
+Utah                                                                      	1  033	90.2	1.6	24	2.4
+Vermont                                                               	387	87.6	2	30.3	2.7
+Virginia                                                                 	4  320	82.7	1.8	26	2.1
+Washington                                                          	3  329	91.4	1.5	26.5	2.3
+West Virginia                                                       	1  227	72.7	2.4	12.7	1.8
+Wisconsin                                                            	3  182	86.6	1.8	20.6	2.1
+Wyoming                                                              	300	89.3	2	21.2	2.6

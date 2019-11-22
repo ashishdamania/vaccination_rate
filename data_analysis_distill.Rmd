@@ -1,0 +1,817 @@
+---
+title: "Vaccination rate vs population-level factors"
+author:
+- affiliation: Baylor College of Medicine
+  name: Ashish Damania
+date: "`r Sys.Date()`"
+output: 
+  distill::distill_article:
+    toc: true
+    toc_depth: 2
+---
+
+<style type="text/css">
+.main-container {
+  max-width: 1800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(width = 600)
+```
+
+
+```{r}
+library(tidyverse)
+```
+ 
+# Read vax location data
+```{r, message=FALSE, results='hide', warning=FALSE}
+file_list_vax_loc <- list.files(path="./Vax_location_data",pattern='*.csv', full.names = T)
+df_list_vax_loc <- lapply( file_list_vax_loc, read_csv)
+
+
+df_vax_loc <- do.call(rbind, df_list_vax_loc)
+```
+
+
+# Read vax type data
+```{r, message=FALSE, results='hide', warning=FALSE}
+file_list_vax_type <- list.files(path="./Vax_type_data/",pattern='*.csv', full.names = T)
+df_list_vax_type <- lapply(file_list_vax_type, read_csv)
+
+
+df_vax_type <- do.call(rbind, df_list_vax_type)
+```
+
+
+# Combine vax type and location data    
+
+- one VAERS_ID may have multiple VAX_TYPE since advserse incident can happen for multiple vaccines - which is reflected by the multiple VAERS_ID in the VAX_TYPE data.  
+
+- We are restricting the date to MMR vaccine and age of less or equal to five.  
+
+```{r}
+df_vax_combined <- df_vax_type %>%
+  inner_join(df_vax_loc, by = c("VAERS_ID")) %>%
+  filter(VAX_TYPE=="MMR") %>%
+  filter(!is.na(STATE)) %>% # Remove rows with no location information
+ #uses state.name variable which has all us states variable names as a list
+  mutate(STATE_FULL_NAME=state.name[match(STATE,state.abb)]) %>% 
+  mutate(YEAR = substring(RECVDATE,7,10)) %>%
+  filter(AGE_YRS <= 5) 
+```
+
+
+## Using dummy states dataframe to fill zeroes in states with no adverse reaction reported
+```{r}
+dummy_df_states <- data.frame(rep(state.name,23),seq(1995,2017)) %>%
+                  rename("state"=1, "year"=2) %>%
+                  mutate(state=as.character(state)) %>%
+                  mutate(year=as.numeric(year))
+
+df_vax_zero_fixed <- df_vax_combined %>%
+  filter(!is.na(STATE_FULL_NAME)) %>%
+  mutate(YEAR=as.numeric(YEAR)) %>%
+  select(HOSPITAL, STATE_FULL_NAME,YEAR) %>% #Get Hospitalization column
+  count(STATE_FULL_NAME, YEAR, HOSPITAL) %>% 
+  spread(HOSPITAL,n) %>% # Count hospitalization  
+  filter(YEAR < 2018) %>%
+  right_join(dummy_df_states, by =c("STATE_FULL_NAME"="state",YEAR="year"))
+```
+
+
+
+
+
+
+# Get Population data to calculate rate of vaccine adverse reaction
+```{r}
+df_population_age_year <- 
+  read_tsv("Bridged-Race Population Estimates 1990-2018.txt") %>%
+  filter(`Age Group` =="1-4 years") %>%
+  filter(!is.na(`Yearly July 1st Estimates`)) %>%
+  filter(State!="District of Columbia") %>%
+  filter(`Yearly July 1st Estimates` > 1994 & `Yearly July 1st Estimates` < 2018) %>%
+  select(`Age Group`, State, `Yearly July 1st Estimates`,`Population`)
+```
+
+
+
+
+
+#Get Educational attainment data
+
+## 1995-2000
+```{r}
+list_education_list_95_2000 <- 
+  list.files(path="Education_attainment",pattern='*.xlsx', full.names = T)
+
+df_95_2000<- data_frame(filename=list_education_list_95_2000) %>%
+  mutate(file_contents =map(list_education_list_95_2000, ~ readxl::read_xlsx(file.path(.) ))) %>%
+  mutate(filename = str_remove(filename,'(.)*_')) %>%
+  mutate(filename = str_remove(filename,'.xlsx')) %>%
+  select(year=filename,file_contents) 
+
+df_95 <- df_95_2000 %>%
+  filter(year==1995) %>%
+  unnest() %>%
+  slice(2:n()) %>%
+  rename("state_name"=2) %>%
+  select(year, state_name,percent_bachelors_or_higher=`...5`) %>%
+     mutate(state_name= gsub('[^ -~]', '', state_name)) %>%
+     mutate(state_name = iconv(state_name, "UTF-8", "ASCII", sub="")) %>%
+     mutate(state_name = trimws(state_name,which=c("both"))) %>%
+     filter(state_name %in% state.name) 
+
+
+df_96 <- df_95_2000 %>%
+  filter(year==1996) %>%
+  unnest() %>%
+  slice(2:n()) %>%
+  rename("state_name"=2) %>%
+  select(year, state_name,percent_bachelors_or_higher=`...5`) %>%
+     mutate(state_name= gsub('[^ -~]', '', state_name)) %>%
+     mutate(state_name = iconv(state_name, "UTF-8", "ASCII", sub="")) %>%
+     mutate(state_name = trimws(state_name,which=c("both"))) %>%
+     filter(state_name %in% state.name) 
+
+
+df_97 <- df_95_2000 %>%
+  filter(year==1997) %>%
+  unnest() %>%
+  slice(2:n()) %>%
+  rename("state_name"=2) %>%
+  select(year, state_name,percent_bachelors_or_higher=`...5`) %>%
+     mutate(state_name= gsub('[^ -~]', '', state_name)) %>%
+     mutate(state_name = iconv(state_name, "UTF-8", "ASCII", sub="")) %>%
+     mutate(state_name = trimws(state_name,which=c("both"))) %>%
+     filter(state_name %in% state.name) 
+
+
+df_98 <- df_95_2000 %>%
+  filter(year==1998) %>%
+  unnest() %>%
+  slice(2:n()) %>%
+  rename("state_name"=2) %>%
+  select(year, state_name,percent_bachelors_or_higher=`...5`) %>%
+     mutate(state_name= gsub('[^ -~]', '', state_name)) %>%
+     mutate(state_name = iconv(state_name, "UTF-8", "ASCII", sub="")) %>%
+     mutate(state_name = trimws(state_name,which=c("both"))) %>%
+     filter(state_name %in% state.name) 
+
+
+df_99 <- df_95_2000 %>%
+  filter(year==1999) %>%
+  unnest() %>%
+  slice(2:n()) %>%
+  rename("state_name"=2) %>%
+  select(year, state_name,percent_bachelors_or_higher=`...5`) %>%
+     mutate(state_name= gsub('[^ -~]', '', state_name)) %>%
+     mutate(state_name = iconv(state_name, "UTF-8", "ASCII", sub="")) %>%
+     mutate(state_name = trimws(state_name,which=c("both"))) %>%
+     filter(state_name %in% state.name) 
+  
+
+df_2000 <- df_95_2000 %>%
+  filter(year==2000) %>%
+  unnest() %>%
+  slice(2:n()) %>%
+  rename("state_name"=2) %>%
+  select(year, state_name,percent_bachelors_or_higher=`...4`) %>%
+     mutate(state_name= gsub('[^ -~]', '', state_name)) %>%
+     mutate(state_name = iconv(state_name, "UTF-8", "ASCII", sub="")) %>%
+     mutate(state_name = trimws(state_name,which=c("both"))) %>%
+     filter(state_name %in% state.name) 
+
+
+df_95_2000_com <- rbind(df_95,df_96,df_97,df_98,df_99,df_2000)
+```
+
+
+
+
+
+## 2001-2006
+```{r}
+list_education_list_2001_2006 <- list.files(path="Education_attainment",pattern='*.xls$', full.names = T)
+```
+
+```{r}
+df_2001_2002 <- data_frame(filename=list_education_list_2001_2006) %>%
+  mutate(file_contents =map(filename, ~ readxl::read_xls(file.path(.)))) %>%
+  mutate(filename = str_remove(filename,'(.)*_')) %>%
+  mutate(filename = str_remove(filename,'.xls')) %>%
+  filter(filename==c(2001,2002))%>%
+  unnest() %>%
+  select(filename,2,`...5` ) %>% #5th column is the percentage of the population of 25 and above
+  janitor::clean_names() %>%
+  slice(6:n()) %>%
+  rename(state_name=`table_with_row_headers_in_column_a_and_column_headers_in_row_5_and_repeated_in_row_41`) %>%
+  filter(state_name %in% state.name) %>%
+  rename(percent_bachelors_or_higher=x5)
+
+df_2003_2004 <- data_frame(filename=list_education_list_2001_2006) %>%
+  mutate(file_contents =map(filename, ~ readxl::read_xls(file.path(.)))) %>%
+  mutate(filename = str_remove(filename,'(.)*_')) %>%
+  mutate(filename = str_remove(filename,'.xls')) %>%
+  filter(filename%in% c(2003:2004,1)) %>%
+  unnest() %>%
+  select(filename,2,`...5` ) %>% #5th column is the percentage of the population of 25 and above
+  janitor::clean_names() %>%
+  slice(5:n()) %>%
+  rename(state_name=`table_with_row_headers_in_column_a_and_column_headers_in_row_5`) %>%
+  filter(state_name %in% state.name) %>%
+  rename(percent_bachelors_or_higher=x5)
+
+
+df_2005_2006 <- data_frame(filename=list_education_list_2001_2006) %>%
+  mutate(file_contents =map(filename, ~ readxl::read_xls(file.path(.)))) %>%
+  mutate(filename = str_remove(filename,'(.)*_')) %>%
+  mutate(filename = str_remove(filename,'.xls')) %>%
+  filter(filename%in% c(2005:2006,1)) %>%
+  unnest() %>%
+  select(filename,2,`...5` ) %>% #5th column is the percentage of the population of 25 and above
+  janitor::clean_names() %>%
+  slice(5:n()) %>%
+  rename(state_name=`table_with_row_headers_in_column_a_and_column_headers_in_rows_5_and_6`) %>%
+  filter(state_name %in% state.name) %>%
+  rename(percent_bachelors_or_higher=x5)
+
+df_2001_2006_com <- rbind(df_2001_2002,df_2003_2004,df_2005_2006) %>%
+                     rename(year=filename)
+  
+```
+
+
+
+
+
+## 2007-2017
+```{r}
+list_education_list_2007_2017 <- list.files(path="Education_attainment",pattern='*.csv', full.names = T)
+
+
+
+df1_2007_2017 <- data_frame(filename=list_education_list_2007_2017) %>%
+  mutate(file_contents =map(filename, ~ read_csv(file.path(.)))) %>%
+  mutate(filename = str_remove(filename,'.*/')) %>%
+  mutate(filename = str_remove(filename,'_S1501_with_ann.csv')) %>%
+    mutate(filename = case_when(
+    filename == "ACS_07_3YR" ~ 2007,
+    filename == "ACS_08_3YR" ~ 2008,
+    filename == "ACS_09_5YR" ~ 2009,
+    filename == "ACS_10_5YR" ~ 2010,
+    filename == "ACS_11_5YR" ~ 2011,
+    filename == "ACS_12_5YR" ~ 2012,
+    filename == "ACS_13_5YR" ~ 2013,
+    filename == "ACS_14_5YR" ~ 2014,
+    filename == "ACS_15_5YR" ~ 2015,
+    filename == "ACS_16_5YR" ~ 2016,
+    filename == "ACS_17_5YR" ~ 2017
+  )) 
+
+
+df1_2007_2009 <- df1_2007_2017 %>%
+  filter(filename %in% 2007:2009) %>%
+  unnest() %>%
+  select(filename,`GEO.display-label`,89) %>%
+  select(year=filename,state_name = `GEO.display-label`,percent_bachelors_or_higher=`HC01_EST_VC15`) %>%
+  slice(2:n()) %>%
+  filter(state_name %in% state.name) 
+
+df1_2010_2014 <- df1_2007_2017 %>%
+  filter(filename %in% 2010:2014) %>%
+  unnest() %>%
+ select(filename,`GEO.display-label`,89) %>%
+  select(year=filename,state_name = `GEO.display-label`,percent_bachelors_or_higher=`HC01_EST_VC17`) %>%
+  slice(2:n()) %>%
+  filter(state_name %in% state.name) 
+
+df1_2015_2017 <- df1_2007_2017 %>%
+  filter(filename %in% 2015:2017) %>%
+  unnest() %>%
+   select(year=filename,state_name=`GEO.display-label`,percent_bachelors_or_higher=HC02_EST_VC18) %>%
+  slice(2:n()) %>%
+  filter(state_name %in% state.name) 
+  
+
+
+df1_2007_2017_com <- rbind(df1_2007_2009, df1_2010_2014, df1_2015_2017)
+
+```
+
+### Combine all dataframes to get educational attainment
+```{r}
+df_educational_attainment <- rbind(df_95_2000_com,df_2001_2006_com,df1_2007_2017_com) %>%
+  mutate_at(vars(year,percent_bachelors_or_higher),as.numeric)
+```
+
+
+
+
+
+# Join Population data with Combined vax type and location data
+```{r}
+df_pop_reaction_rate <- df_vax_zero_fixed %>%
+  rename(adverse_reaction_count=4, hospitalization_count=3) %>%
+  mutate(hospitalization_count= replace_na(hospitalization_count,0))%>%
+   mutate(adverse_reaction_count= replace_na(adverse_reaction_count,0))%>%
+  inner_join(df_population_age_year, by=c("YEAR"="Yearly July 1st Estimates","STATE_FULL_NAME"="State")) %>%
+  inner_join(df_educational_attainment, by=c("YEAR"="year","STATE_FULL_NAME"="state_name")) %>%
+  mutate(reaction_rate_per_100_000 = (adverse_reaction_count/Population)*100000) %>%
+  mutate(hospitalization_rate_per_100_000 = (hospitalization_count/Population)*100000) %>%
+  select(STATE_FULL_NAME, YEAR, reaction_rate_per_100_000, hospitalization_rate_per_100_000,percent_bachelors_or_higher) 
+  
+```
+
+
+
+
+
+
+
+# Read Vaccination rate data from 1995-2017  
+
+- This spreadsheet includes data for multiple vaccines for ages 13 months - 35 months  
+
+```{r}
+#Declare years as character to select 
+years <- as.character(c(1995:2017))
+
+df_vax_rate <- readxl::read_excel("dataView2116_17.xls", skip = 2, range = "A3:FA142") %>% #confirm that the range for the 18-35 months for MMR vaccination is as specified here
+  select(Names,!!years) %>%
+  filter(Names %in% state.name) %>% #state.name is a builtin variable with all US states name
+  gather(year,rate,-Names) %>%
+  mutate(year=as.numeric(year), rate = as.numeric(rate))
+```
+
+
+# Combine vax rate with vax adverse rate
+```{r}
+df_final <- df_pop_reaction_rate %>%
+  inner_join(df_vax_rate, by=c("STATE_FULL_NAME"="Names", "YEAR"="year"))
+
+```
+
+
+
+
+
+
+
+
+
+
+# Restrict Analysis to state that allows voluntary philosophical vaccine exemptions  
+
+- Using sources from these references:  
+  - Omer, S. B., Pan, W. K. Y., Halsey, N. A., Stokley, S., Moulton, L. H., Navar, A. M., …    Salmon, D. A. (2006). Nonmedical exemptions to school immunization requirements: secular trends and association of state policies with pertussis incidence. JAMA: The Journal of the American Medical Association, 296(14), 1757–1763.  
+
+
+  - Omer, S. B., Richards, J. L., Ward, M., & Bednarczyk, R. A. (2012). Vaccination policies and rates of exemption from immunization, 2005-2011. The New England Journal of Medicine, 367(12), 1170–1171.  
+  
+
+https://www.cdc.gov/vaccines/imz-managers/coverage/schoolvaxview/pubs-resources.html#pubs
+
+```{r}
+states_philosophical_exemptions_1995_2004 <- c("California", "Colorado", 
+                                               "Idaho", "Louisiana", "Maine", 
+                                               "Michigan", "Minnesota","New Mexico", 
+                                               "North Dakota", "Ohio", "Oklahoma", 
+                                               "Oregon", "Pennsylvania", "Utah",
+                                               "Vermont","Washington", "Wisconsin")
+
+states_philosophical_exemptions_2005_2011 <-  c("Arizona","Arkansas","California", 
+                                                "Colorado", "Idaho", "Louisiana",
+                                                "Maine", "Michigan", "Minnesota",
+                                                "New Mexico", "North Dakota", "Ohio",
+                                                "Oklahoma", "Oregon", "Pennsylvania",
+                                                "Texas","Utah","Vermont",
+                                                "Washington", "Wisconsin")
+
+states_philosophical_exemptions_2012_2015 <-  c("Arizona","Arkansas","California", 
+                                                "Colorado", "Idaho", "Louisiana", 
+                                                "Maine", "Michigan", "Minnesota", 
+                                                "North Dakota", "Ohio", "Oklahoma",
+                                                "Oregon", "Pennsylvania","Texas",
+                                                "Utah","Vermont","Washington", "Wisconsin")
+
+states_philosophical_exemptions_2016_2017 <-  c("Arizona","Arkansas", "Colorado", 
+                                                "Idaho", "Louisiana", "Maine", 
+                                                "Michigan","Minnesota", "North Dakota", 
+                                                "Ohio", "Oklahoma","Oregon",
+                                                "Pennsylvania","Texas","Utah","Washington", 
+                                                "Wisconsin")
+```
+
+
+**California had philosophical based exemption until 2015**  
+
+**Vermont had atleast until 2004**  
+
+**Arizona has no philosophical based exemption until 2004**
+
+
+
+
+## Add these states to the dataframe
+```{r}
+df_f2 <- df_final %>%
+  mutate(exemption_y_n = case_when(
+    STATE_FULL_NAME %in% states_philosophical_exemptions_1995_2004 & (YEAR >= 1995 & YEAR <= 2004) ~ 1,
+    STATE_FULL_NAME %in% states_philosophical_exemptions_2005_2011 & (YEAR >= 2005 & YEAR<= 2011) ~ 1,
+    STATE_FULL_NAME %in% states_philosophical_exemptions_2012_2015 & (YEAR >= 2012 & YEAR <=2015 ) ~ 1,
+    STATE_FULL_NAME %in% states_philosophical_exemptions_2016_2017 & (YEAR >= 2016 & YEAR <= 2017) ~ 1,
+    TRUE ~ 0
+  ))  %>%
+  mutate(exemption_y_n = factor(exemption_y_n)) 
+``` 
+
+# Save data as R object file
+```{r}
+saveRDS(df_f2,"processed_intermediate_data.rds")
+```
+
+
+
+# Summary of the dataset
+```{r}
+Hmisc::describe(df_f2)
+summarytools::descr(df_f2)
+```
+
+
+# Data dictionary
+```{r}
+Variables <- colnames(df_f2)
+data_type <- c("text", 
+               "Numeric", 
+               "Numeric", 
+               "Numeric", 
+               "Numeric",
+               "Numeric",
+               "text")
+description <- c("US state name",
+                 "Year",
+                 "Adverse reaction rate per 100,000 using VAERS database and CDC wonder database of population from 1-4 ages",
+                 "Hospitalization rate per 100,000 using VAERS database and CDC wonder database of population from 1-4 ages",
+                 "Percent of population among 25 or higher with bachelors degree or higher",
+                 "MMR vaccination percent coverage in the State",
+                 "Indication of whether or not if a State allows non-medical personal exemption. `0` indicates that State does not have non-medical vaccine exemption. `1` indicates that State allows non-medical personal exmeption for vaccination")
+
+
+tibble(Variables,data_type,description) %>%
+knitr::kable()
+```
+
+# Table 1
+```{r}
+reaction_rate_df <- df_f2 %>%
+  group_by(exemption_y_n) %>%
+do(data.frame(rbind(Hmisc::smean.cl.boot(.$reaction_rate_per_100_000)))) %>%
+  ungroup() %>%
+  mutate(factor = paste0("Reaction_rate_per_100_000"))
+
+
+hospitalization_rate_df <-df_f2 %>%
+  group_by(exemption_y_n) %>%
+do(data.frame(rbind(Hmisc::smean.cl.boot(.$hospitalization_rate_per_100_000)))) %>%
+  ungroup() %>%
+  mutate(factor = paste0("Hospitalization_rate_per_100_000"))
+
+
+percent_bachelors_or_higher_df  <- df_f2 %>%
+  group_by(exemption_y_n) %>%
+do(data.frame(rbind(Hmisc::smean.cl.boot(.$percent_bachelors_or_higher)))) %>%
+  ungroup() %>%
+  mutate(factor = paste0("Percent Bachelors or higher"))
+
+vaccination_rate_df <- df_f2 %>%
+  group_by(exemption_y_n) %>%
+do(data.frame(rbind(Hmisc::smean.cl.boot(.$rate)))) %>%
+  ungroup() %>%
+   mutate(factor = paste0("Vaccination Rate"))
+
+
+rbind(reaction_rate_df,
+      hospitalization_rate_df,
+      percent_bachelors_or_higher_df,
+      vaccination_rate_df) %>%
+      select(-Upper,-Lower) %>%
+      spread(exemption_y_n,Mean)
+
+```
+
+
+
+
+
+```{r}
+df_f2 %>%
+  select(reaction_rate_per_100_000, hospitalization_rate_per_100_000, percent_bachelors_or_higher, rate) %>%
+  gather(key,value) %>%
+  group_by(key) %>%
+  do(data.frame(rbind(Hmisc::smean.cl.boot(.$value))))
+  
+```
+
+
+```{r}
+df_f2 %>%
+  group_by(exemption_y_n) %>%
+  summarytools::descr(.)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Spearman Correlation analysis
+```{r}
+df_f3 <- df_f2 %>%
+  mutate(exemption_y_n = as.numeric(as.character(exemption_y_n)) )
+
+PerformanceAnalytics::chart.Correlation(df_f3[,-1], method = c("spearman"))
+```
+
+
+
+
+# Linear cross-random effects univariate
+
+## Reaction rate only
+```{r}
+lmer_reaction_only <- lmerTest::lmer(rate ~ reaction_rate_per_100_000 + (1|YEAR) + (1|STATE_FULL_NAME) ,data=df_f2, REML = F)
+summary(lmer_reaction_only)
+```
+
+
+
+## Hospitalization rate only
+```{r}
+lmer_hospitalization_only <- lmerTest::lmer(rate ~ hospitalization_rate_per_100_000 +
+                                              (1|STATE_FULL_NAME) + (1|YEAR),
+                                            data=df_f2, REML = F)
+summary(lmer_hospitalization_only)
+```
+
+
+## Education attainment only
+```{r}
+lmer_percent_bachelors_or_higher <- lmerTest::lmer(rate ~ percent_bachelors_or_higher + 
+                                                     (1|YEAR)+ (1|STATE_FULL_NAME),
+                                                   data=df_f2, REML = F)
+summary(lmer_percent_bachelors_or_higher)
+```
+
+
+## Philosophical based exemption
+```{r}
+lmer_exemption_y_n <- lmerTest::lmer(rate ~ 
+                                       exemption_y_n + 
+                                       (1|YEAR) + 
+                                       (1|STATE_FULL_NAME),
+                                     data=df_f2, REML = F)
+summary(lmer_exemption_y_n)
+```
+
+
+
+# Test the variability between the State vs the years
+```{r}
+lmer0 <- lmerTest::lmer(rate ~ 
+                          1 + 
+                          (1|STATE_FULL_NAME) + 
+                          (1|YEAR), 
+                        data=df_f2, REML =F)
+summary(lmer0)
+```
+
+
+# Cross-random effects model (random intercept model) for state and year as "Random" and other covariates as fixed  
+
+- We are using this model since YEAR and States are **NOT** nested within each other.  
+
+```{r}
+lmer1 <- lmerTest::lmer(rate ~  
+                          reaction_rate_per_100_000 + 
+                          hospitalization_rate_per_100_000 + 
+                          exemption_y_n + 
+                          percent_bachelors_or_higher +
+                          (1|YEAR) +
+                          (1|STATE_FULL_NAME),
+                          data=df_f2, REML=F)
+summary(lmer1)
+```
+
+-  This model shows that none of the independent variables or predictors are significant at p-value of 0.05
+
+
+
+# Logistic regression model with coverage greater than 93% vs less than 93%
+
+```{r}
+df_f4 <- df_f2 %>%
+  mutate(rate_90_y_n = case_when(
+    rate >= 93 ~ 1,
+    rate < 93 ~ 0
+  ) ) %>%
+  filter(YEAR > 1994)
+```
+
+## Univariate
+
+
+### Reaction rate per 100,000
+```{r}
+m4_1 <- lme4::glmer(rate_90_y_n ~ 
+                    reaction_rate_per_100_000 +
+                          (1|YEAR) +
+                          (1|STATE_FULL_NAME),
+                          data=df_f4, family="binomial")
+summary(m4_1)
+
+exp(m4_1@beta)
+```
+
+### Hospitalization rate per 100,000
+```{r}
+m4_2 <- lme4::glmer(rate_90_y_n ~ 
+                    hospitalization_rate_per_100_000 +
+                          (1|YEAR) +
+                          (1|STATE_FULL_NAME),
+                          data=df_f4, family="binomial")
+summary(m4_2)
+
+exp(m4_2@beta)
+```
+
+
+### Education attainment
+```{r}
+m4_3 <- lme4::glmer(rate_90_y_n ~ 
+                    percent_bachelors_or_higher   +
+                          (1|YEAR) +
+                          (1|STATE_FULL_NAME),
+                          data=df_f4, family="binomial")
+summary(m4_3)
+
+exp(m4_3@beta)
+```
+
+
+### Exemption policy
+```{r}
+m4_4 <- lme4::glmer(rate_90_y_n ~ 
+                    exemption_y_n   +
+                          (1|YEAR) +
+                          (1|STATE_FULL_NAME),
+                          data=df_f4, family="binomial")
+summary(m4_4)
+
+exp(m4_4@beta)
+```
+
+
+
+## Multivariate
+```{r}
+m4 <- lme4::glmer(rate_90_y_n ~ 
+                          hospitalization_rate_per_100_000 +
+                          percent_bachelors_or_higher  +
+                          (1|YEAR) +
+                          (1|STATE_FULL_NAME)+
+                          exemption_y_n,
+                          data=df_f4, family="binomial")
+(m4_summary <- summary(m4))
+broom::tidy(m4_summary$coefficients)
+```
+
+- Here the model tells whether or not the coverage was greater or less than 93% relates with the predictors.  
+- 93% percent or more is required for herd immunity
+
+https://www.nejm.org/doi/full/10.1056/NEJMp1905099 (93-95%)
+https://jamanetwork.com/journals/jamapediatrics/fullarticle/2203906 (95%)
+https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6626669/ (92-95%)
+
+
+
+
+
+
+
+## Odds ratio with confidence interval
+```{r}
+odds_ratio_logistic <-lme4::confint.merMod(m4,method = c("Wald"))
+
+(odds_ratio_conf_int_df <- broom::tidy(odds_ratio_logistic) %>%
+  janitor::clean_names() %>%
+  mutate(x2_5=exp(x2_5),x97_5=exp(x97_5)) %>%
+  slice(3:n()) %>%
+  cbind(broom::tidy(exp(m4@beta))) %>%
+    filter(rownames!="(Intercept)"))
+```
+
+
+
+### Plot odds ratio with confidence interval
+```{r}
+
+odds_ratio_conf_int_df %>%
+  mutate(rownames=case_when(
+    rownames=="hospitalization_rate_per_100_000" ~ "Hospitalization rate per 100,000",
+    rownames=="percent_bachelors_or_higher" ~"Percent bachelors or higher",
+    rownames=="exemption_y_n1" ~ "Personal belief exemption policy"
+  )) %>%
+  mutate(color = if_else(x > 1, "Positive", "Negative")) %>%
+ggplot(data=., aes(x=reorder(rownames,x),y=x,color=color)) +
+  geom_pointrange(aes(ymin = x2_5, ymax = x97_5),size=1.5) +
+  scale_color_manual(
+    values = c("Positive" = "blue", "Negative" = "red"),
+    name = ""
+  ) +
+  xlab("Factors") +
+  ylab("Odds Ratio") +
+  guides(fill = guide_legend(title = "LEFT", title.position = "left")) +
+  coord_flip()+
+  geom_hline(yintercept = 1,linetype = 2)+
+  theme_bw()+
+  theme(text = element_text(size=18))
+
+ ggsave("Logistic_regression_odds_ratio.pdf", width = 25, height = 15, units = "cm")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Check for multicollinearity for all perdictors
+## Check for Variance inflation factor
+
+### Linear model
+```{r}
+car::vif( lmerTest::lmer(rate ~ reaction_rate_per_100_000 + 
+                               hospitalization_rate_per_100_000 +
+                               exemption_y_n +
+                               percent_bachelors_or_higher + (1|YEAR) + (1|STATE_FULL_NAME),
+                               data=df_f2, REML =F) )
+
+
+```
+
+**VIF values for all predictors are below 3 which indicates low correlation between the variables.**  
+
+
+### Logistic model
+```{r}
+ car::vif(lme4::glmer(rate_90_y_n ~ 
+                    reaction_rate_per_100_000 +
+                          hospitalization_rate_per_100_000 +
+                          percent_bachelors_or_higher  +
+                          (1|YEAR) +
+                          (1|STATE_FULL_NAME)+
+                          exemption_y_n,
+                          data=df_f4, family="binomial"))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
