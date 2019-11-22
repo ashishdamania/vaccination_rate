@@ -30,7 +30,7 @@ knitr::opts_chunk$set(echo = FALSE)
 
 # Data for model
 ```{r}
-complete_data <- readRDS("processed_intermediate_data.rds") 
+complete_data <- readRDS("processsed_data/processed_intermediate_data.rds") 
 paged_table(complete_data)
 ```
 
@@ -51,7 +51,7 @@ ggplot(complete_data) +
   theme(legend.position = "none") +
   ggtitle("Vaccination rate across 50 US states 1995-2017")
 
-ggsave("rate_of_vaccination_states_1995_2017.pdf", width = 30, height = 20, units = "cm")
+ggsave("figures/rate_of_vaccination_states_1995_2017.pdf", width = 30, height = 20, units = "cm")
 ```
 
 
@@ -67,7 +67,7 @@ ggplot(complete_data) +
   theme(legend.position = "none") +
   ggtitle("States which have achieved 95% vaccination rate atleast once since 1995")
 
-ggsave("rate_of_vaccination_states.pdf", width = 30, height = 20, units = "cm")
+ggsave("figures/rate_of_vaccination_states.pdf", width = 30, height = 20, units = "cm")
 ```
 
 
@@ -88,7 +88,7 @@ ggplot(.) +
   theme(legend.position = "none") +
   ggtitle("States which have achieved 95% vaccination rate atleast once since 2010")
 
-ggsave("rate_of_vaccination_states_2010_2017.pdf", width = 30, height = 20, units = "cm")
+ggsave("figures/rate_of_vaccination_states_2010_2017.pdf", width = 30, height = 20, units = "cm")
 ```
 
 
@@ -106,7 +106,7 @@ ggplot(.) +
   theme(legend.position = "none") +
   ggtitle("Reaction rate per 100,000")
 
-ggsave("rate_of_adverse_reaction_states_1995_2017.pdf", width = 30, height = 20, units = "cm")
+ggsave("figures/rate_of_adverse_reaction_states_1995_2017.pdf", width = 30, height = 20, units = "cm")
 ```
 
 
@@ -126,7 +126,7 @@ ggplot(.) +
   theme(legend.position = "none") +
   ggtitle("Hospitalization rate per 100,000")
 
-ggsave("rate_of_hospitalization_rate_states_1995_2017.pdf", width = 30, height = 20, units = "cm")
+ggsave("figures/rate_of_hospitalization_rate_states_1995_2017.pdf", width = 30, height = 20, units = "cm")
 ```
 
 
@@ -155,7 +155,7 @@ do(data.frame(rbind(Hmisc::smean.cl.boot(.$rate)))) %>%
     theme(text = element_text(size=18))+
     theme(legend.position = "none")+
   annotate("rect", ymin = 93, ymax = Inf, xmin=Inf,xmax = -Inf,alpha = .2,fill="green")
-   ggsave("Mean_vaccination_coverage_1995_2017_yes_exemption.pdf", width = 30, height = 20, units = "cm")
+   ggsave("figures/Mean_vaccination_coverage_1995_2017_yes_exemption.pdf", width = 30, height = 20, units = "cm")
 ```  
   
   
@@ -183,7 +183,7 @@ do(data.frame(rbind(Hmisc::smean.cl.boot(.$rate)))) %>%
   theme(text = element_text(size=18))+
      theme(legend.position = "none")+
   annotate("rect", ymin = 93, ymax = Inf, xmin=Inf,xmax = -Inf,alpha = .2,fill="green")
-    ggsave("Mean_vaccination_coverage_1995_2017_no_exemption.pdf", width = 30, height = 30, units = "cm")
+    ggsave("figures/Mean_vaccination_coverage_1995_2017_no_exemption.pdf", width = 30, height = 30, units = "cm")
 ```
 
 
@@ -213,7 +213,7 @@ do(data.frame(rbind(Hmisc::smean.cl.boot(.$rate)))) %>%
   coord_flip()+
   theme_bw()+
 annotate("rect", ymin = 90, ymax = 100, xmin=Inf,xmax = -Inf,alpha = .2,fill="green")
-  ggsave("Mean_vaccination_coverage_1995_2017.pdf", width = 30, height = 20, units = "cm")
+  ggsave("figures/Mean_vaccination_coverage_1995_2017.pdf", width = 30, height = 20, units = "cm")
 ```
 
 
@@ -221,7 +221,7 @@ annotate("rect", ymin = 90, ymax = 100, xmin=Inf,xmax = -Inf,alpha = .2,fill="gr
 
 ```{r}
 
-states<-  sf::st_read("cb_2017_us_state_20m/cb_2017_us_state_20m.shp") %>%
+states<-  sf::st_read("Raw_data/US_States_shape_file/cb_2017_us_state_20m/cb_2017_us_state_20m.shp") %>%
                 filter(NAME != "District of Columbia") %>%
                 filter(NAME != "Puerto Rico") %>%
 filter(as.numeric(as.character(STATEFP)) < 57) %>%
@@ -301,7 +301,7 @@ ggplot() +
   geom_label(data = nc3_coords, aes(X, Y, label = NAME), size = 2.5, fontface = "bold", 
         nudge_y = nc3_coords$nudge_y, nudge_x = nc3_coords$nudge_x) +
   theme_bw()+
-    guides(fill=guide_legend(title="Vaccination coverage (2017")) +
+    guides(fill=guide_legend(title="Vaccination coverage (2017)")) +
     theme(legend.position="top")+
    theme(axis.text.x=element_blank(), 
         axis.text.y=element_blank(),

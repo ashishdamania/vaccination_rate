@@ -30,7 +30,7 @@ library(tidyverse)
  
 # Read vax location data
 ```{r, message=FALSE, results='hide', warning=FALSE}
-file_list_vax_loc <- list.files(path="./Vax_location_data",pattern='*.csv', full.names = T)
+file_list_vax_loc <- list.files(path="Raw_data/VAERS/Vax_location_data",pattern='*.csv', full.names = T)
 df_list_vax_loc <- lapply( file_list_vax_loc, read_csv)
 
 
@@ -40,7 +40,7 @@ df_vax_loc <- do.call(rbind, df_list_vax_loc)
 
 # Read vax type data
 ```{r, message=FALSE, results='hide', warning=FALSE}
-file_list_vax_type <- list.files(path="./Vax_type_data/",pattern='*.csv', full.names = T)
+file_list_vax_type <- list.files(path="Raw_data/VAERS/Vax_type_data",pattern='*.csv', full.names = T)
 df_list_vax_type <- lapply(file_list_vax_type, read_csv)
 
 
@@ -91,7 +91,7 @@ df_vax_zero_fixed <- df_vax_combined %>%
 # Get Population data to calculate rate of vaccine adverse reaction
 ```{r}
 df_population_age_year <- 
-  read_tsv("Bridged-Race Population Estimates 1990-2018.txt") %>%
+  read_tsv("Raw_data/CDC_Wonder_database/Bridged-Race Population Estimates 1990-2018.txt") %>%
   filter(`Age Group` =="1-4 years") %>%
   filter(!is.na(`Yearly July 1st Estimates`)) %>%
   filter(State!="District of Columbia") %>%
@@ -108,7 +108,7 @@ df_population_age_year <-
 ## 1995-2000
 ```{r}
 list_education_list_95_2000 <- 
-  list.files(path="Education_attainment",pattern='*.xlsx', full.names = T)
+  list.files(path="Raw_data/Education_attainment",pattern='*.xlsx', full.names = T)
 
 df_95_2000<- data_frame(filename=list_education_list_95_2000) %>%
   mutate(file_contents =map(list_education_list_95_2000, ~ readxl::read_xlsx(file.path(.) ))) %>%
@@ -197,7 +197,7 @@ df_95_2000_com <- rbind(df_95,df_96,df_97,df_98,df_99,df_2000)
 
 ## 2001-2006
 ```{r}
-list_education_list_2001_2006 <- list.files(path="Education_attainment",pattern='*.xls$', full.names = T)
+list_education_list_2001_2006 <- list.files(path="Raw_data/Education_attainment/Education_attainment",pattern='*.xls$', full.names = T)
 ```
 
 ```{r}
@@ -252,7 +252,7 @@ df_2001_2006_com <- rbind(df_2001_2002,df_2003_2004,df_2005_2006) %>%
 
 ## 2007-2017
 ```{r}
-list_education_list_2007_2017 <- list.files(path="Education_attainment",pattern='*.csv', full.names = T)
+list_education_list_2007_2017 <- list.files(path="Raw_data/Education_attainment",pattern='*.csv', full.names = T)
 
 
 
@@ -342,7 +342,7 @@ df_pop_reaction_rate <- df_vax_zero_fixed %>%
 #Declare years as character to select 
 years <- as.character(c(1995:2017))
 
-df_vax_rate <- readxl::read_excel("dataView2116_17.xls", skip = 2, range = "A3:FA142") %>% #confirm that the range for the 18-35 months for MMR vaccination is as specified here
+df_vax_rate <- readxl::read_excel("Raw_data/MMR_vaccination/dataView2116_17.xls", skip = 2, range = "A3:FA142") %>% #confirm that the range for the 18-35 months for MMR vaccination is as specified here
   select(Names,!!years) %>%
   filter(Names %in% state.name) %>% #state.name is a builtin variable with all US states name
   gather(year,rate,-Names) %>%
@@ -433,7 +433,7 @@ df_f2 <- df_final %>%
 
 # Save data as R object file
 ```{r}
-saveRDS(df_f2,"processed_intermediate_data.rds")
+saveRDS(df_f2,"processsed_data/processed_intermediate_data.rds")
 ```
 
 
