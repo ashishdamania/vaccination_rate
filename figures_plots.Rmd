@@ -21,6 +21,7 @@ library(geofacet)
 library(gghighlight)
 library(sf)
 library(gridExtra)
+devtools::install_github("hrbrmstr/albersusa")
 ```
 
 
@@ -225,65 +226,6 @@ gridExtra::grid.arrange(p1_no_policy, p2_yes_policy, nrow = 1)
 
 
 
-
-```{r}
-
-states<-  sf::st_read("Raw_data/US_States_shape_file/cb_2017_us_state_20m/cb_2017_us_state_20m.shp") %>%
-                filter(NAME != "District of Columbia") %>%
-                filter(NAME != "Puerto Rico") %>%
-filter(as.numeric(as.character(STATEFP)) < 57) %>%
-         #this removes US territories
-          filter(as.numeric(as.character(STATEFP)) != 2) %>% 
-        #this removes Alaska
-          filter(as.numeric(as.character(STATEFP)) != 15) %>%
-        #this removes Hawaii 
-        mutate(abb_state= openintro::state2abbr(NAME))
-
-nc3_points <- sf::st_point_on_surface(states)
-nc3_coords <- as.data.frame(sf::st_coordinates(nc3_points))
-nc3_coords$NAME <- states$abb_state
-
-com_df <- complete_data %>%
-  mutate(herd_immunity=case_when(
-    rate >= 93 ~ 1,
-    rate < 93 ~ 0
-  )) %>%
-  group_by(STATE_FULL_NAME,herd_immunity) %>%
-  tally() %>%
-  spread(herd_immunity,n) %>%
-  mutate(.,`1`=ifelse(is.na(`1`), 0, `1`)) %>%
-  mutate(percent_achieved_herd_immunity = `1`/23) %>%
-    filter(STATE_FULL_NAME!="Alaska") %>%
-  filter(STATE_FULL_NAME!="Hawaii") 
-
-ggplot() +
-  geom_sf(data=states, aes(fill=com_df$`1`))+
-  #coord_sf(xlim = c(, 25), ylim = c(-180, -150), expand = FALSE, datum = NA)+
-  scale_fill_viridis_c(option = "plasma", "Count of years",direction=-1) +
-  geom_label(data = nc3_coords, aes(X, Y, label = NAME), size = 4, fontface = "bold", 
-        nudge_y = nc3_coords$nudge_y, nudge_x = nc3_coords$nudge_x) +
-  theme_bw()+
-    theme(legend.position="bottom")+
-   theme(axis.text.x=element_blank(), 
-        axis.text.y=element_blank(),
-        axis.ticks.x=element_blank(),
-        axis.ticks.y=element_blank(),
-        panel.grid = element_blank(),
-        legend.position = c(0.9, 0.3)
-      ) +
-  xlab("") +
-  ylab("")
-  
-    ggsave("Heatmap_count_years_exceeding_93_percent.pdf", width = 30, height = 20, units = "cm")
-```
-
-
-
-
-
-
-
-
 # Current coverage
 ```{r}
 com_df_2017 <- complete_data %>%
@@ -302,7 +244,7 @@ all_df <- states %>%
 
 ggplot() +
   geom_sf(data=all_df, aes(fill=factor(category)))+
- scale_fill_manual(values=c( "#F3DFA2","#7EBDC2","#BB4430"), 
+ scale_fill_manual(values=c( "#F3DFA2","#7EBDC2","#BB4430","#962389"), 
                        breaks=c( "At herd immunity","Above 90% and below 93%","Below 90%"),
                        labels=c("At herd immunity","Above 90% and below 93%","Below 90%")) +
   geom_label(data = nc3_coords, aes(X, Y, label = NAME), size = 2.5, fontface = "bold", 
@@ -317,6 +259,82 @@ ggplot() +
   xlab("") +
   ylab("")
 ```
+
+
+
+
+
+
+
+
+
+# Heatmap for the count of years States meeting or exceeding herd immunity
+```{r}
+com_df_2 <- complete_data %>%
+  mutate(herd_immunity=case_when(
+    rate >= 93 ~ 1,
+    rate < 93 ~ 0
+  )) %>%
+  group_by(STATE_FULL_NAME,herd_immunity) %>%
+  tally() %>%
+  spread(herd_immunity,n) %>%
+  mutate(.,`1`=ifelse(is.na(`1`), 0, `1`)) %>%
+  mutate(percent_achieved_herd_immunity = `1`/23) %>%
+  rename("count_of_achieving_herd_immunity"=`1`)
+
+
+states <- albersusa::usa_sf() %>%
+  inner_join(com_df_2, by = c("name"="STATE_FULL_NAME")) %>%
+   mutate(Herd_immunity_count=case_when(
+        `count_of_achieving_herd_immunity` >= 0 & `count_of_achieving_herd_immunity` <= 5 ~ "0 to 5",
+        `count_of_achieving_herd_immunity` >=6 & `count_of_achieving_herd_immunity` <=10 ~ "6 to 10",
+        `count_of_achieving_herd_immunity` >=11 & `count_of_achieving_herd_immunity` <=15 ~ "11 to 15",
+        `count_of_achieving_herd_immunity` >=16 & `count_of_achieving_herd_immunity` <=23 ~ "16 to 23",
+      ))
+  
+
+nc3_points2 <- sf::st_point_on_surface(states)
+nc3_coords2 <- as.data.frame(sf::st_coordinates(nc3_points2))
+nc3_coords2$NAME <- states$iso_3166_2
+
+    
+ggplot() +
+  geom_sf(data=states, aes(fill=as.factor(Herd_immunity_count)))+
+  geom_label(data = nc3_coords2, aes(X, Y, label = NAME), size = 4, fontface = "bold", 
+        nudge_y = nc3_coords2$nudge_y, nudge_x = nc3_coords2$nudge_x) +
+   scale_fill_manual(values=c("#fec4b0", "#c03e38","#720206","#f78170","#ea5349","#fffff"), 
+                        name="",
+                        breaks=c("0 to 5","6 to 10", "11 to 15", "16 to 23"),
+                        labels=c("0 to 5","6 to 10", "11 to 15", "16 to 23"))+
+  theme_bw()+
+    guides(fill=guide_legend(title="Count of years")) +
+    theme(legend.position="bottom")+
+   theme(axis.text.x=element_blank(), 
+        axis.text.y=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.ticks.y=element_blank(),
+        panel.grid = element_blank(),
+        legend.position = c(0.9, 0.3)
+      ) +
+  xlab("") +
+  ylab("")
+ ggsave("figures/Heatmap2_count_years_exceeding_93_percent.pdf", width = 30, height = 20, units = "cm")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
