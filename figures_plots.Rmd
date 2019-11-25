@@ -20,6 +20,7 @@ library(tableHTML)
 library(geofacet)
 library(gghighlight)
 library(sf)
+library(gridExtra)
 ```
 
 
@@ -144,7 +145,7 @@ do(data.frame(rbind(Hmisc::smean.cl.boot(.$rate)))) %>%
   filter(exemption_y_n == 1)
 
 
-  ggplot(data=df1_plotmeans, aes(x=reorder(STATE_FULL_NAME,-Mean),y=Mean)) +
+  p2_yes_policy <- ggplot(data=df1_plotmeans, aes(x=reorder(STATE_FULL_NAME,-Mean),y=Mean)) +
   geom_pointrange(aes(ymin = Lower, ymax = Upper,color=exemption_y_n),size=1) + 
     scale_color_manual(name="",labels=c("","") ,
     values=c("red","blue") )+
@@ -171,7 +172,7 @@ do(data.frame(rbind(Hmisc::smean.cl.boot(.$rate)))) %>%
   filter(!is.na(Lower))
 
 
-  ggplot(data=df3_plotmeans, aes(x=reorder(STATE_FULL_NAME,-Mean),y=Mean)) +
+ p1_no_policy <-  ggplot(data=df3_plotmeans, aes(x=reorder(STATE_FULL_NAME,-Mean),y=Mean)) +
   geom_pointrange(aes(ymin = Lower, ymax = Upper,color=exemption_y_n),size=1) + 
   scale_color_manual(name="",labels=c("Does not allow Philosophical exemption") ,
   values=c("blue") )+
@@ -181,9 +182,8 @@ do(data.frame(rbind(Hmisc::smean.cl.boot(.$rate)))) %>%
   coord_flip()+
   theme_bw()+
   theme(text = element_text(size=18))+
-     theme(legend.position = "none")+
+  theme(legend.position = "none")+
   annotate("rect", ymin = 93, ymax = Inf, xmin=Inf,xmax = -Inf,alpha = .2,fill="green")
-    ggsave("figures/Mean_vaccination_coverage_1995_2017_no_exemption.pdf", width = 30, height = 30, units = "cm")
 ```
 
 
@@ -203,18 +203,25 @@ do(data.frame(rbind(Hmisc::smean.cl.boot(.$rate)))) %>%
  # filter(exemption_y_n == 0)
 
 
-  ggplot(data=df2_plotmeans, aes(x=reorder(STATE_FULL_NAME,-Mean),y=Mean)) +
+ggplot(data=df2_plotmeans, aes(x=reorder(STATE_FULL_NAME,-Mean),y=Mean)) +
   geom_pointrange(aes(ymin = Lower, ymax = Upper,color=exemption_y_n)) +
-   scale_color_manual(name="State",labels=c("Allows Philosophical Exemption","Does not allow Philosophical exemption") ,
-    values=c("red","blue") )+
-    xlab("States") +
-    ylab("Mean vaccination coverage 1995-2017") +
-      guides(fill = guide_legend(title = "LEFT", title.position = "left")) +
+  scale_color_manual(name="State",labels=c("Allows Philosophical Exemption","Does not allow Philosophical exemption") ,
+                     values=c("red","blue") )+
+  xlab("States") +
+  ylab("Mean vaccination coverage 1995-2017") +
+  guides(fill = guide_legend(title = "LEFT", title.position = "left")) +
   coord_flip()+
   theme_bw()+
-annotate("rect", ymin = 90, ymax = 100, xmin=Inf,xmax = -Inf,alpha = .2,fill="green")
-  ggsave("figures/Mean_vaccination_coverage_1995_2017.pdf", width = 30, height = 20, units = "cm")
+  annotate("rect", ymin = 90, ymax = 100, xmin=Inf,xmax = -Inf,alpha = .2,fill="green")
+
 ```
+
+## Combination graph
+```{r}
+gridExtra::grid.arrange(p1_no_policy, p2_yes_policy, nrow = 1)
+```
+
+
 
 
 

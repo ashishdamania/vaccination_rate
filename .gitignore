@@ -1,3 +1,4 @@
 # Specify filepatterns you want git to ignore.
 .Rproj*
 .DS_Store
+.Rproj.user
