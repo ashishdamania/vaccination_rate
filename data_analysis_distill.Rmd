@@ -197,7 +197,7 @@ df_95_2000_com <- rbind(df_95,df_96,df_97,df_98,df_99,df_2000)
 
 ## 2001-2006
 ```{r}
-list_education_list_2001_2006 <- list.files(path="Raw_data/Education_attainment/Education_attainment",pattern='*.xls$', full.names = T)
+list_education_list_2001_2006 <- list.files(path="Raw_data/Education_attainment",pattern='*.xls$', full.names = T)
 ```
 
 ```{r}
@@ -354,7 +354,6 @@ df_vax_rate <- readxl::read_excel("Raw_data/MMR_vaccination/dataView2116_17.xls"
 ```{r}
 df_final <- df_pop_reaction_rate %>%
   inner_join(df_vax_rate, by=c("STATE_FULL_NAME"="Names", "YEAR"="year"))
-
 ```
 
 
