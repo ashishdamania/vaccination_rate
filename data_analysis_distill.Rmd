@@ -750,7 +750,7 @@ ggplot(data=., aes(x=reorder(rownames,x),y=x,color=color)) +
   theme_bw()+
   theme(text = element_text(size=18))
 
- ggsave("Logistic_regression_odds_ratio.pdf", width = 25, height = 15, units = "cm")
+ ggsave("figures/Logistic_regression_odds_ratio.pdf", width = 25, height = 15, units = "cm")
 ```
 
 
