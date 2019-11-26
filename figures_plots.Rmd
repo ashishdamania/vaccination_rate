@@ -217,9 +217,10 @@ ggplot(data=df2_plotmeans, aes(x=reorder(STATE_FULL_NAME,-Mean),y=Mean)) +
 
 ```
 
-## Combination graph
+## Combination graph of mean coverage States with no PBE (Blue) vs States with PBE (Red)
 ```{r}
-gridExtra::grid.arrange(p1_no_policy, p2_yes_policy, nrow = 1)
+p1_2 <- gridExtra::grid.arrange(p1_no_policy, p2_yes_policy, nrow = 1)
+ggsave("combined_mean_coverage.pdf",p1_2,width = 30, height = 20, units = "cm")
 ```
 
 
