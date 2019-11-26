@@ -3,7 +3,7 @@ title: "Create plots and figures for the project"
 description: |
   Impact of different factors on Vaccination Rate
 author:
-  - name: Ashish Damania 
+  - name: Ashish Damania as part of the project 
     affiliation: Baylor College of Medicine
 date: "`r Sys.Date()`"
 output:
